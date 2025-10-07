@@ -109,10 +109,10 @@ export default function AppShell() {
                       </div>
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {user?.username || user?.name || 'Adwait Pande'}
+                          {user?.username || user?.name }
                         </div>
                         <div className="text-xs text-gray-500">
-                          {user?.email || 'adwait@example.com'}
+                          {user?.email}
                         </div>
                       </div>
                     </div>

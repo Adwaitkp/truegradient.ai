@@ -4,6 +4,7 @@ import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import AppShell from './pages/AppShell';
+import AuthCallback from './pages/AuthCallback';
 
 // Private route guard
 function Private({ children }) {
@@ -28,6 +29,7 @@ const router = createBrowserRouter([
   { path: '/', element: <RootRedirect /> },
   { path: '/signin', element: <PublicOnly><SignIn /></PublicOnly> },
   { path: '/signup', element: <PublicOnly><SignUp /></PublicOnly> },
+  { path: '/auth/callback', element: <AuthCallback /> },
   { path: '/app', element: <Private><AppShell /></Private> }
 ], {
   future: {
