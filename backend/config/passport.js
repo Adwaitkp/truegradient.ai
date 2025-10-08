@@ -1,7 +1,16 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import User from './Models/Users.js';
-import Organization from './Models/Organization.js';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Ensure .env is loaded before using process.env
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+// Try local .env (../.env). Fallback to default cwd lookup.
+dotenv.config({ path: path.join(__dirname, '../.env') });
+import User from '../Models/Users.js';
+import Organization from '../Models/Organization.js';
 
 // Helper function to create default organization for new users
 async function createDefaultOrganization(user) {
