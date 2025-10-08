@@ -45,6 +45,9 @@ export default function SignIn() {
     
     if (validateForm()) {
       try {
+        // Clear any existing auth data before signing in with new account
+        localStorage.removeItem('token');
+        
         const result = await dispatch(signIn(form)).unwrap();
         console.log('SignIn successful:', result);
       } catch (error) {

@@ -56,6 +56,9 @@ export default function SignUp() {
     
     if (validateForm()) {
       try {
+        // Clear any existing auth data before signing up with new account
+        localStorage.removeItem('token');
+        
         const result = await dispatch(signUp({ username: form.username, password: form.password })).unwrap();
         console.log('SignUp successful:', result);
       } catch (error) {

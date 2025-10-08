@@ -1,5 +1,6 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import ChatWindow from '../components/ChatWindow';
 import NotificationPanel from '../components/NotificationPanel';
@@ -9,6 +10,7 @@ import { signOut } from '../features/auth/authSlice';
 
 export default function AppShell() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const credits = useSelector((s) => s.credits.balance);
   const user = useSelector((s) => s.auth.user);
   const { items } = useSelector((s) => s.notifications);
@@ -18,8 +20,13 @@ export default function AppShell() {
   const unreadCount = items.filter(item => !item.read).length;
 
   const handleSignOut = () => {
+    // Clear all auth state
     dispatch(signOut());
     setIsDropdownOpen(false);
+    // Force navigation to signin
+    navigate('/signin', { replace: true });
+    // Reload the page to clear all state
+    window.location.reload();
   };
 
   return (
@@ -31,20 +38,22 @@ export default function AppShell() {
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Credits */}
-          <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl shadow-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-              strokeLinejoin="round" className="lucide lucide-coins h-4 w-4 text-blue-600" aria-hidden="true">
-              <circle cx="8" cy="8" r="6" />
-              <path d="M18.09 10.37A6 6 0 1 1 10.34 18" />
-              <path d="M7 6h1v4" />
-              <path d="m16.71 13.88.7.71-2.82 2.82" />
-            </svg>
-            <span className="text-sm font-medium text-blue-700">
-              {credits?.toLocaleString() || '1,248'}
-            </span>
-          </div>
+          {/* Credits (show only when available) */}
+          {typeof credits === 'number' && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                strokeLinejoin="round" className="lucide lucide-coins h-4 w-4 text-blue-600" aria-hidden="true">
+                <circle cx="8" cy="8" r="6" />
+                <path d="M18.09 10.37A6 6 0 1 1 10.34 18" />
+                <path d="M7 6h1v4" />
+                <path d="m16.71 13.88.7.71-2.82 2.82" />
+              </svg>
+              <span className="text-sm font-medium text-blue-700">
+                {credits.toLocaleString()}
+              </span>
+            </div>
+          )}
 
           {/* Notification Button */}
           <button
@@ -62,22 +71,23 @@ export default function AppShell() {
             )}
           </button>
 
-          {/* User Profile with Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2"
-            >
-              <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold">
-                {user?.username?.[0]?.toUpperCase() || user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'A'}
-              </div>
-              <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
-                {user?.username || user?.name || user?.email?.split('@')[0] || 'Adwait Pande'}
-              </span>
-              <svg className={`w-4 h-4 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+          {/* User Profile with Dropdown (render only when user exists) */}
+          {user && (
+            <div className="relative">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center gap-2"
+              >
+                <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                  {(user.username?.[0] || user.name?.[0] || user.email?.[0])?.toUpperCase()}
+                </div>
+                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                  {user.username || user.name || user.email?.split('@')[0]}
+                </span>
+                <svg className={`w-4 h-4 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
 
             
             {isDropdownOpen && (
@@ -107,14 +117,14 @@ export default function AppShell() {
                   <div className="p-3 border-b border-gray-100">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold">
-                        {user?.username?.[0]?.toUpperCase() || user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'A'}
+                        {(user.username?.[0] || user.name?.[0] || user.email?.[0])?.toUpperCase()}
                       </div>
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {user?.username || user?.name }
+                          {user.username || user.name}
                         </div>
                         <div className="text-xs text-gray-500">
-                          {user?.email}
+                          {user.email}
                         </div>
                       </div>
                     </div>
@@ -166,6 +176,7 @@ export default function AppShell() {
               </>
             )}
           </div>
+          )}
         </div>
       </header>
 

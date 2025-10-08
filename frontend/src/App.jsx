@@ -1,10 +1,11 @@
-import React from 'react';
-import { useSelector } from 'react-redux';
+﻿import React, { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import AppShell from './pages/AppShell';
 import AuthCallback from './pages/AuthCallback';
+import { fetchCurrentUser } from './features/auth/authSlice';
 
 // Private route guard
 function Private({ children }) {
@@ -39,5 +40,16 @@ const router = createBrowserRouter([
 });
 
 export default function App() {
+  const dispatch = useDispatch();
+  const token = useSelector((s) => s.auth.token);
+  const user = useSelector((s) => s.auth.user);
+
+  // Fetch user data on mount if token exists but user is not loaded
+  useEffect(() => {
+    if (token && !user) {
+      dispatch(fetchCurrentUser());
+    }
+  }, [token, user, dispatch]);
+
   return <RouterProvider router={router} future={{ v7_startTransition: true }} />;
 }

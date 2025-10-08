@@ -41,6 +41,26 @@ export const signIn = createAsyncThunk('auth/signIn', async (payload, { rejectWi
   }
 });
 
+export const fetchCurrentUser = createAsyncThunk('auth/fetchCurrentUser', async (_, { rejectWithValue }) => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No token found');
+    }
+    return await request('/auth/me');
+  } catch (error) {
+    // Only clear token on auth errors; keep token for transient/network errors
+    const status = error.response?.status;
+    if (status === 401 || status === 403) {
+      localStorage.removeItem('token');
+    }
+    return rejectWithValue({
+      message: error.message,
+      status
+    });
+  }
+});
+
 const slice = createSlice({
   name: 'auth',
   initialState: { 
@@ -54,10 +74,17 @@ const slice = createSlice({
       state.user = null; 
       state.token = null; 
       state.error = null;
+      state.loading = false;
       localStorage.removeItem('token'); 
     },
     clearError(state) {
       state.error = null;
+    },
+    clearAuth(state) {
+      state.user = null;
+      state.token = null;
+      state.error = null;
+      state.loading = false;
     }
   },
   extraReducers: (builder) => {
@@ -95,9 +122,29 @@ const slice = createSlice({
       .addCase(signIn.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      // Fetch current user cases
+      .addCase(fetchCurrentUser.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchCurrentUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.user;
+        // Token is already in localStorage, just ensure state is synced
+        state.token = localStorage.getItem('token');
+      })
+      .addCase(fetchCurrentUser.rejected, (state, action) => {
+        state.loading = false;
+        if (action.payload?.status === 401 || action.payload?.status === 403) {
+          // Auth error: clear state
+          state.user = null;
+          state.token = null;
+        } else {
+          // Transient error: keep token, leave user as-is
+        }
       });
   }
 });
 
-export const { signOut, clearError } = slice.actions;
+export const { signOut, clearError, clearAuth } = slice.actions;
 export default slice.reducer;

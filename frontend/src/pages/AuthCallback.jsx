@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
+import { fetchCurrentUser } from '../features/auth/authSlice';
+import { setDefaultOrganization } from '../features/organizations/organizationsSlice';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -22,47 +24,25 @@ export default function AuthCallback() {
     }
 
     if (token) {
-      // Store token
+      // Store token in localStorage
       localStorage.setItem('token', token);
       
-      // Fetch user data and update Redux state
-      const fetchUserData = async () => {
+      // Fetch user data using the auth thunk
+      const loadUser = async () => {
         try {
-          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-          const response = await fetch(`${apiUrl}/auth/me`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            
-            // Update auth state
-            dispatch({ 
-              type: 'auth/signIn/fulfilled', 
-              payload: { 
-                token, 
-                user: data.user,
-                organization: data.organization
-              } 
-            });
-
-            // Set organization if available
-            if (data.organization) {
-              dispatch({
-                type: 'organizations/setDefaultOrganization',
-                payload: data.organization
-              });
-            }
-
-            // Navigate to app
-            navigate('/app', { replace: true });
-          } else {
-            throw new Error('Failed to fetch user data');
+          const result = await dispatch(fetchCurrentUser()).unwrap();
+          
+          // Set organization if available
+          if (result.organization) {
+            dispatch(setDefaultOrganization(result.organization));
           }
+
+          // Navigate to app
+          navigate('/app', { replace: true });
         } catch (error) {
           console.error('Error fetching user data:', error);
+          // Clear invalid token
+          localStorage.removeItem('token');
           navigate('/signin', { 
             state: { 
               error: 'Authentication failed. Please try again.' 
@@ -71,7 +51,7 @@ export default function AuthCallback() {
         }
       };
 
-      fetchUserData();
+      loadUser();
     } else {
       // No token or error, redirect to signin
       navigate('/signin');
