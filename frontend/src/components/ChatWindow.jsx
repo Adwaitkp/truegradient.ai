@@ -124,8 +124,6 @@ export default function ChatWindow() {
             </button>
           </div>
           <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
-            <span>Press Enter to send, Shift+Enter for new line</span>
-            <span>0/2000</span>
           </div>
         </form>
       </div>

@@ -50,6 +50,21 @@ router.post('/rooms/:id/messages', (req, res) => {
   const msg = { id: randomUUID(), role: req.body.role || 'user', text: req.body.text, createdAt: new Date() };
   list.push(msg);
   messagesByRoom.set(req.params.id, list);
+  // If this is the first user message, update the room title from 'New Chat' to a snippet
+  try {
+    if ((req.body.role || 'user') === 'user' && typeof req.body.text === 'string' && req.body.text.trim()) {
+      const rooms = roomsByUser.get(req.userId) || [];
+      const idx = rooms.findIndex(r => r.id === req.params.id);
+      if (idx !== -1) {
+        const currentTitle = (rooms[idx].title || '').trim();
+        if (!currentTitle || /^new chat$/i.test(currentTitle)) {
+          const snippet = req.body.text.trim().slice(0, 50);
+          rooms[idx] = { ...rooms[idx], title: snippet };
+          roomsByUser.set(req.userId, rooms);
+        }
+      }
+    }
+  } catch {}
   res.json({ message: msg });
 });
 

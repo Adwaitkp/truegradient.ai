@@ -18,14 +18,25 @@ export const createRoom = createAsyncThunk('chat/createRoom', async (title) =>
 export const loadMessages = createAsyncThunk('chat/loadMessages', async (roomId) =>
   (await request(`/api/rooms/${roomId}/messages`)).messages
 );
-export const sendMessage = createAsyncThunk('chat/sendMessage', async ({ roomId, text }, { dispatch }) => {
+export const sendMessage = createAsyncThunk('chat/sendMessage', async ({ roomId, text }, { dispatch, getState }) => {
+  const state = getState();
+  const room = state.chat.rooms.find(r => r.id === roomId);
+  // Optimistically rename room if it's still 'New Chat'
+  if (room && (!room.title || /^new chat$/i.test(room.title))) {
+    const snippet = (text || '').trim().slice(0, 50);
+    if (snippet) {
+      // Update client-side title immediately
+      dispatch({ type: 'chat/renameRoomLocal', payload: { id: roomId, title: snippet } });
+    }
+  }
+
   const userMessage = (await request(`/api/rooms/${roomId}/messages`, { method: 'POST', body: JSON.stringify({ text }) })).message;
   
   // Call Gemini API for AI response
   try {
     const { text: aiText } = await request('/api/ai/gemini', {
       method: 'POST',
-      body: JSON.stringify({ text, model: 'gemini-1.5-flash' })
+      body: JSON.stringify({ text })
     });
     
     // Send AI response to backend
@@ -55,7 +66,13 @@ export const sendMessage = createAsyncThunk('chat/sendMessage', async ({ roomId,
 const slice = createSlice({
   name: 'chat',
   initialState: { rooms: [], activeRoomId: null, messages: [] },
-  reducers: { setActiveRoom(state, { payload }) { state.activeRoomId = payload; } },
+  reducers: { 
+    setActiveRoom(state, { payload }) { state.activeRoomId = payload; },
+    renameRoomLocal(state, { payload }) {
+      const idx = state.rooms.findIndex(r => r.id === payload.id);
+      if (idx !== -1) state.rooms[idx].title = payload.title;
+    }
+  },
   extraReducers(b) {
     b.addCase(loadRooms.fulfilled, (s, { payload }) => { s.rooms = payload; if (!s.activeRoomId && payload[0]) s.activeRoomId = payload[0].id; })
      .addCase(createRoom.fulfilled, (s, { payload }) => { s.rooms.push(payload); s.activeRoomId = payload.id; })
@@ -64,5 +81,5 @@ const slice = createSlice({
   }
 });
 
-export const { setActiveRoom } = slice.actions;
+export const { setActiveRoom, renameRoomLocal } = slice.actions;
 export default slice.reducer;
