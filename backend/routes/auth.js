@@ -148,6 +148,12 @@ router.get('/google/callback',
   passport.authenticate('google', { session: false, failureRedirect: '/signin' }),
   async (req, res) => {
     try {
+      console.log('Google OAuth callback - User:', req.user);
+      
+      if (!req.user) {
+        throw new Error('No user returned from Google OAuth');
+      }
+
       // Generate JWT token
       const token = jwt.sign(
         { sub: req.user._id.toString(), username: req.user.username },
@@ -155,12 +161,15 @@ router.get('/google/callback',
         { expiresIn: '7d' }
       );
 
+      console.log('JWT token generated, redirecting to frontend');
+
       // Redirect to frontend with token
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
       res.redirect(`${frontendUrl}/auth/callback?token=${token}`);
     } catch (error) {
       console.error('Google callback error:', error);
-      res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/signin?error=auth_failed`);
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      res.redirect(`${frontendUrl}/signin?error=auth_failed`);
     }
   }
 );

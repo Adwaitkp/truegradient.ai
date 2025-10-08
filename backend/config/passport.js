@@ -3,14 +3,13 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-
-// Ensure .env is loaded before using process.env
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-// Try local .env (../.env). Fallback to default cwd lookup.
-dotenv.config({ path: path.join(__dirname, '../.env') });
 import User from '../Models/Users.js';
 import Organization from '../Models/Organization.js';
+
+// Load environment variables
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 // Helper function to create default organization for new users
 async function createDefaultOrganization(user) {
@@ -42,10 +41,13 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
+        console.log('Google OAuth - Profile received:', profile.id, profile.emails?.[0]?.value);
+        
         // Check if user already exists with this Google ID
         let user = await User.findOne({ googleId: profile.id });
 
         if (user) {
+          console.log('Existing user found with Google ID:', user.username);
           // User exists, return the user
           return done(null, user);
         }
@@ -55,6 +57,7 @@ passport.use(
         if (email) {
           user = await User.findOne({ email });
           if (user) {
+            console.log('Linking Google account to existing user:', user.username);
             // Link Google account to existing user
             user.googleId = profile.id;
             user.authProvider = 'google';
@@ -65,6 +68,7 @@ passport.use(
         }
 
         // Create new user
+        console.log('Creating new user from Google profile');
         const username = profile.displayName?.replace(/\s+/g, '_').toLowerCase() || 
                         email?.split('@')[0] || 
                         `google_user_${Date.now()}`;
@@ -86,8 +90,12 @@ passport.use(
           credits: 1250
         });
 
+        console.log('New user created:', user.username);
+
         // Create default organization for new user
         await createDefaultOrganization(user);
+        
+        console.log('Default organization created for user:', user.username);
 
         return done(null, user);
       } catch (error) {
